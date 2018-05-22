@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--This use for calculate network rental cost of 2300 partnership-->
+<head>
+    <meta charset="UTF-8">
+    <title>TOT featuring DTN</title>
+    <script src="dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.js"></script>
+</head>
+<body>
+<h2> คำนวณค่าเช่าอุปกรณ์ (ขาจ่าย)</h2>
+<input type="file" name="xlfile" id="xlf" /> ... click here to select a file
+<script>
+    var xlf = document.getElementById('xlf');
+    const NW_RENTAL =  49500;
+    const NW_SERVICE = 5500;
+    const DATE_COL = 'B';
+    const NO_OF_SITE_COL = 'C';
+    const PERIOD_CELL = DATE_COL+'2';
+    const FROM_CELL = DATE_COL+'3';
+    const TO_CELL = DATE_COL+'4';
+    const DATE_HEADER = 'Date';
+    const TOTAL_SITE_NO = 'Total No. of Site';
+    const NOT_FOUND_Date = 10;
+    function findCell(sheet,text,cell,rowbegin,maxloop){
+
+
+    }
+    function handleFile(e) {
+        var files = e.target.files;
+        var i,f;
+        for (i = 0, f = files[i]; i != files.length; ++i) {
+            var reader = new FileReader();
+            var name = f.name;
+            reader.onload = function(e) {
+                var data = e.target.result;
+
+                var workbook = XLSX.read(data, {type: 'binary',cellDates:true});
+                var first_sheet_name = workbook.SheetNames[0];
+                console.log(first_sheet_name);
+                // make sure correct sheet name
+                if (first_sheet_name=='Summary Daily'){
+                    console.log('same sheet');
+                } else {
+                    alert('wrong sheet');
+                }
+                /* Get worksheet */
+                var worksheet = workbook.Sheets[first_sheet_name];
+
+                // make sure correct column
+                var mm_period = moment(worksheet[PERIOD_CELL].v);
+                var mm_from = moment(worksheet[FROM_CELL].v);
+                var mm_to = moment(worksheet[TO_CELL].v);
+                // first check period and from is samedate
+                if (mm_period.diff(mm_from)== 0){
+                    console.log("same date");
+                    console.log(PERIOD_CELL.substring(0, 1));
+                } else {
+                    alert("period and from is not same date");
+                }
+                // find begining of date
+                var row_of_datecell = TO_CELL.substr(-1); //only the last char
+                var i = 0;
+                console.log(row_of_datecell);
+               for (i = parseInt(row_of_datecell); i < NOT_FOUND_Date; i++) {
+                   console.log("i ="+i);
+                    var cell_run = PERIOD_CELL.substring(0, 1)+i;
+                    console.log("CELL_RUN ="+cell_run)
+                   if (worksheet[cell_run]!== undefined ) {
+                       if (worksheet[cell_run].v == DATE_HEADER) {
+                           break;
+                       }
+                   }// error the vaule of blank cell
+                }
+                console.log("i is : "+i);
+               console.log("NOT_F is :"+NOT_FOUND_Date);
+                if (i === NOT_FOUND_Date) {
+                   alert("Error: Can not find Date Header");
+                    throw new Error('Error: Can not find Date Header');
+                }
+
+                // if found i is row number of date header
+
+                var address_of_cell = 'B2';
+                var firstdate_of_month ='B'+(i+1);
+                // ต้องหาว่า next ฺB แล้ว เป็น C มี ไหม แล้วจะทำอย่างไร ให้ การ รวมค่า ทั้ง 30 วัน ง่าย ต้องใช้ data Structure อะไร
+                // เปลี่ยนใจแระ ใช้ hardCode เป็น const ไปเลย
+                // push each day site no. to array
+                // try only first one to check the vaule of cell
+                var site_no = [];
+                var total_sites = 0;
+                for(j=0;j<mm_period.daysInMonth();j++){
+                    site_no.push(worksheet[NO_OF_SITE_COL+(i+1+j)].v);
+                    total_sites = total_sites+site_no[j];
+                }
+                console.log(site_no);
+                console.log("total_no_of_site : "+total_sites);
+
+                /* Find desired cell */
+                var desired_cell = worksheet[address_of_cell];
+                var firstdate_cell = worksheet[firstdate_of_month];
+
+                /* Get the value */
+                var desired_value = desired_cell.v;
+                /* DO SOMETHING WITH workbook HERE */
+               console.log('B3 ='+desired_value);
+var moment_first_day = moment(desired_value);
+var moment_second_day = moment(firstdate_cell.v);
+               console.log('MOMENT B3 ='+moment_first_day.format());
+               console.log('B9 ='+firstdate_cell.v);
+                console.log('MOMENT B9 ='+moment(firstdate_cell.v));
+               if (moment_second_day.diff(moment_first_day)== 0){
+                alert("same date");
+               } else {
+                   alert("not same date");
+               }
+
+            };
+            reader.readAsBinaryString(f);
+        }
+    }
+    xlf.addEventListener('change', handleFile, false);
+</script>
+</body>
+</html>
