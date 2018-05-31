@@ -5,10 +5,11 @@
     <meta charset="UTF-8">
     <title>TOT featuring DTN</title>
     <script src="dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.js"></script>
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.js"></script>-->
+    <script src="dist/moment-with-locales.js"></script>
 </head>
 <body>
-<h2> คำนวณค่าเช่าอุปกรณ์ (ขาจ่าย)</h2>
+<h2> ตรวจสอบการคำนวณค่าเช่าอุปกรณ์ (ขาจ่าย)</h2>
 <input type="file" name="xlfile" id="xlf" /> ... click here to select a file
 <script>
     var xlf = document.getElementById('xlf');
@@ -21,9 +22,33 @@
     const TO_CELL = DATE_COL+'4';
     const DATE_HEADER = 'Date';
     const TOTAL_SITE_NO = 'Total No. of Site';
-    const NOT_FOUND_Date = 10;
-    function findCell(sheet,text,cell,rowbegin,maxloop){
+    const MAX_SEARCH = 10;
+    // temporally
+    const AVG_SITE_NO_CELL = 'C42';
+    const NW_RENTAL_CELL = 'C46';
+    const NW_SERVICE_CELL = 'D46';
+    const TOTAL_NW_COST_CELL = 'E46';
 
+    function findCell(sheet,text,col,rowbegin,maxloop){
+        let i;
+        for (i = rowbegin; i < (rowbegin+maxloop); i++) {
+            console.log("i ="+i);
+            var cell_run = col+i;
+            console.log("CELL_RUN ="+cell_run);
+            if (sheet[cell_run]!== undefined ) {
+                if (sheet[cell_run].v == text) {
+                    break;
+                }
+            }// error the vaule of blank cell
+        }
+        console.log("i is : "+i);
+        console.log("MAX is :"+maxloop);
+        if (i === maxloop) {
+            alert("Error: Can not find : "+text);
+            throw new Error("Error: Can not find : "+text);
+        } else return i;
+
+        // if found i is row number of date header
 
     }
     function handleFile(e) {
@@ -43,11 +68,13 @@
                     console.log('same sheet');
                 } else {
                     alert('wrong sheet');
+                    throw new Error("Error: Can not find sheet : "+first_sheet_name);
                 }
                 /* Get worksheet */
                 var worksheet = workbook.Sheets[first_sheet_name];
 
                 // make sure correct column
+
                 var mm_period = moment(worksheet[PERIOD_CELL].v);
                 var mm_from = moment(worksheet[FROM_CELL].v);
                 var mm_to = moment(worksheet[TO_CELL].v);
@@ -57,9 +84,12 @@
                     console.log(PERIOD_CELL.substring(0, 1));
                 } else {
                     alert("period and from is not same date");
+                    throw new Error("Error: Can not find cell ");
                 }
                 // find begining of date
-                var row_of_datecell = TO_CELL.substr(-1); //only the last char
+                var date_row_no = findCell(worksheet,DATE_HEADER,DATE_COL,TO_CELL.substr(-1),MAX_SEARCH);
+                console.log("row_result = "+date_row_no);
+/*                var row_of_datecell = TO_CELL.substr(-1); //only the last char
                 var i = 0;
                 console.log(row_of_datecell);
                for (i = parseInt(row_of_datecell); i < NOT_FOUND_Date; i++) {
@@ -77,43 +107,83 @@
                 if (i === NOT_FOUND_Date) {
                    alert("Error: Can not find Date Header");
                     throw new Error('Error: Can not find Date Header');
-                }
+                }*/
 
-                // if found i is row number of date header
+                // if found date_row_no is row number of date header
 
-                var address_of_cell = 'B2';
-                var firstdate_of_month ='B'+(i+1);
+
+
                 // ต้องหาว่า next ฺB แล้ว เป็น C มี ไหม แล้วจะทำอย่างไร ให้ การ รวมค่า ทั้ง 30 วัน ง่าย ต้องใช้ data Structure อะไร
                 // เปลี่ยนใจแระ ใช้ hardCode เป็น const ไปเลย
                 // push each day site no. to array
                 // try only first one to check the vaule of cell
                 var site_no = [];
                 var total_sites = 0;
-                for(j=0;j<mm_period.daysInMonth();j++){
-                    site_no.push(worksheet[NO_OF_SITE_COL+(i+1+j)].v);
+                var daysInMonth = mm_period.daysInMonth();
+                for(j=0;j<daysInMonth;j++){
+                    site_no.push(worksheet[NO_OF_SITE_COL+(date_row_no+1+j)].v);
                     total_sites = total_sites+site_no[j];
                 }
                 console.log(site_no);
                 console.log("total_no_of_site : "+total_sites);
 
-                /* Find desired cell */
-                var desired_cell = worksheet[address_of_cell];
-                var firstdate_cell = worksheet[firstdate_of_month];
+                // Find Total No. of Site
 
-                /* Get the value */
-                var desired_value = desired_cell.v;
-                /* DO SOMETHING WITH workbook HERE */
-               console.log('B3 ='+desired_value);
-var moment_first_day = moment(desired_value);
-var moment_second_day = moment(firstdate_cell.v);
-               console.log('MOMENT B3 ='+moment_first_day.format());
-               console.log('B9 ='+firstdate_cell.v);
-                console.log('MOMENT B9 ='+moment(firstdate_cell.v));
-               if (moment_second_day.diff(moment_first_day)== 0){
-                alert("same date");
-               } else {
-                   alert("not same date");
-               }
+                var total_site_row_no = findCell(worksheet,TOTAL_SITE_NO,DATE_COL,(date_row_no+daysInMonth),MAX_SEARCH);
+                console.log("row_result = "+total_site_row_no);
+                if(worksheet[NO_OF_SITE_COL+total_site_row_no].v === total_sites){
+                    console.log("total_sites is same");
+                }  else {
+                    console.log("Error sites in excel is "+worksheet[NO_OF_SITE_COL+total_site_row_no].v );
+                    console.log("sites in calculation is "+total_sites );
+                    throw new Error("Error: total_sites is NOT same");
+                }
+
+                // Calculate Average No. of Site
+                /*console.log("Round is 3.3: "+Math.round(3.3));
+                console.log("Round is 3.5: "+Math.round(3.5));
+                console.log("Round is 3.6: "+Math.round(3.6));*/
+                var avg_site_no = Math.round(total_sites/daysInMonth);
+                console.log("Average No. of Site = "+avg_site_no);
+                if(worksheet[AVG_SITE_NO_CELL].v === avg_site_no){
+                    console.log("average_sites is same");
+                }  else {
+                    console.log("Error sites in excel is "+worksheet[AVG_SITE_NO_CELL].v );
+                    console.log("sites in calculation is "+total_sites );
+                    throw new Error("Error: average_sites is NOT same");
+                }
+
+                var nw_rental_cost = avg_site_no*NW_RENTAL;
+                console.log("NW rental cost = "+nw_rental_cost);
+                if(worksheet[NW_RENTAL_CELL].v === nw_rental_cost){
+                    console.log("NW rental cost is same");
+                }  else {
+                    console.log("Error NW rental cost in excel is "+worksheet[NW_RENTAL_CELL].v );
+                    console.log("NW rental cost in calculation is "+nw_rental_cost );
+                    throw new Error("Error: NW rental cost is NOT same");
+                }
+
+                var nw_service_cost = avg_site_no*NW_SERVICE;
+                console.log("NW service cost = "+nw_service_cost);
+                if(worksheet[NW_SERVICE_CELL].v === nw_service_cost){
+                    console.log("NW service cost is same");
+                }  else {
+                    console.log("Error NW service cost in excel is "+worksheet[NW_SERVICE_CELL].v );
+                    console.log("NW service cost in calculation is "+nw_service_cost );
+                    throw new Error("Error: NW service cost is NOT same");
+                }
+
+                var nw_total_cost = nw_rental_cost+nw_service_cost;
+                console.log("NW total cost = "+nw_total_cost);
+                if(worksheet[TOTAL_NW_COST_CELL].v === nw_total_cost){
+                    console.log("NW total cost is same");
+                    alert("Calculation is CORRECT");
+                }  else {
+                    console.log("Error NW total cost in excel is "+worksheet[TOTAL_NW_COST_CELL].v );
+                    console.log("NW total cost in calculation is "+nw_total_cost );
+                    throw new Error("Error: NW total cost is NOT same");
+                }
+                
 
             };
             reader.readAsBinaryString(f);
