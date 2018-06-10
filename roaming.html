@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--This use for calculate network rental cost of 2300 partnership-->
+<head>
+    <meta charset="UTF-8">
+    <title>2300 roaming cost verification</title>
+    <script src="dist/xlsx.full.min.js"></script>
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.js"></script>-->
+    <script src="dist/moment-with-locales.js"></script>
+</head>
+<body>
+<h2> ตรวจสอบการคำนวณค่าตอบแทน Roaming 2300 (ขารับ)</h2>
+<input type="file" name="xlfile" id="xlf" /> ... click here to select a file
+<script>
+    var xlf = document.getElementById('xlf');
+    const LICENSE = 1.5/100 ;
+    const USO = 2.5/100;
+    const COST_PER_ESUB =  Math.round(91.67*(1/(1-LICENSE-USO))*100)/100;  // 2 decimal
+    const DTN_ESUB_PER_SITE = 600;
+
+    const SN_IV_SUMMARY = 0;   // sheet no. 0
+    const SN_IV_SUMMARY_NAME = 'Invoice Summary';
+    const SN_SUMMARY = 1;     // sheet no.  1
+    const SN_SUMMARY_NAME = 'Summary';
+    const SN_TRAFFIC = 2;     // sheet no. 2
+    const SN_TRAFFIC_NAME = 'Traffic and Peak Throughput';
+    const SN_DAILY = 3;      // sheet no. 3
+    const SN_DAILY_NAME = 'Daily Site and E.Sub - DTN';
+    const DATE_COL = 'B';
+    const NO_OF_SITE_COL = 'C';
+    const PERIOD_CELL = DATE_COL+'3';
+    const DATE_HEADER = 'Date';
+    const TOTAL_SITE_NO = 'Total';
+    const MAX_SEARCH = 15;
+    // temporally
+    const AVG_SITE_NO_CELL = 'C41';
+    const MIN_ROAMING_COST_CELL_FIRST = 'E19';  // 1st sheet (summary)   AxBxC  (8.2.1)
+    const MIN_ROAMING_COST_CELL_ZERO = 'C12';   // 0th sheet (invoice summary)  No.2 Part 1  COST (8.2.1)
+    const VAT = 7/100;
+    const VAT_ROAMING_COST_CELL_ZERO = 'D12';  // 0th sheet (invoice summary) VAT
+    const TOTAL_ROAMING_COST_CELL_ZERO = 'E12'; // 0th sheet (invoice summary) TOTAL
+
+    function findCell(sheet,text,col,rowbegin,maxloop){
+        let i;
+        for (i = rowbegin; i < (rowbegin+maxloop); i++) {
+            console.log("i ="+i);
+            var cell_run = col+i;
+            console.log("CELL_RUN ="+cell_run);
+            if (sheet[cell_run]!== undefined ) {
+                if (sheet[cell_run].v == text) {
+                    break;
+                }
+            }// error the vaule of blank cell
+        }
+        console.log("i is : "+i);
+        console.log("MAX is :"+maxloop);
+        if (i === maxloop) {
+            alert("Error: Can not find : "+text);
+            throw new Error("Error: Can not find : "+text);
+        } else return i;
+
+        // if found i is row number of date header
+
+    }
+    function handleFile(e) {
+        var files = e.target.files;
+        var i,f;
+        console.log('cost per eSUB = '+COST_PER_ESUB);
+        for (i = 0, f = files[i]; i != files.length; ++i) {
+            var reader = new FileReader();
+            var name = f.name;
+            reader.onload = function(e) {
+                var data = e.target.result;
+
+                var workbook = XLSX.read(data, {type: 'binary',cellDates:true});
+                var zero_sheet_name = workbook.SheetNames[SN_IV_SUMMARY];
+                var first_sheet_name = workbook.SheetNames[SN_SUMMARY];
+                var third_sheet_name = workbook.SheetNames[SN_DAILY];
+                console.log(zero_sheet_name);
+                console.log(first_sheet_name);
+                console.log(third_sheet_name);
+                // make sure correct sheet name
+                if (zero_sheet_name === SN_IV_SUMMARY_NAME ){
+                    console.log('same zero sheet');
+                } else {
+                    alert('wrong zero sheet');
+                    throw new Error("Error: Can not find sheet : "+zero_sheet_name);
+                }
+                if (first_sheet_name === SN_SUMMARY_NAME ){
+                    console.log('same 1st sheet');
+                } else {
+                    alert('wrong 1st sheet');
+                    throw new Error("Error: Can not find sheet : "+first_sheet_name);
+                }
+                if (third_sheet_name === SN_DAILY_NAME ){
+                    console.log('same 3rd sheet');
+                } else {
+                    alert('wrong 3rd sheet');
+                    throw new Error("Error: Can not find sheet : "+third_sheet_name);
+                }
+
+                /* Get worksheet */
+                var zero_worksheet = workbook.Sheets[zero_sheet_name];
+                var first_worksheet = workbook.Sheets[first_sheet_name];
+                var third_worksheet = workbook.Sheets[third_sheet_name];
+
+                // make sure correct column
+                var mm_period = moment(third_worksheet[PERIOD_CELL].v);
+
+
+                // find begining of date for 3rd Sheet
+                var date_row_no = findCell(third_worksheet,DATE_HEADER,DATE_COL,PERIOD_CELL.substr(-1),MAX_SEARCH);
+                console.log("row_result = "+date_row_no);
+                /*                var row_of_datecell = TO_CELL.substr(-1); //only the last char
+                                var i = 0;
+                                console.log(row_of_datecell);
+                               for (i = parseInt(row_of_datecell); i < NOT_FOUND_Date; i++) {
+                                   console.log("i ="+i);
+                                    var cell_run = PERIOD_CELL.substring(0, 1)+i;
+                                    console.log("CELL_RUN ="+cell_run)
+                                   if (worksheet[cell_run]!== undefined ) {
+                                       if (worksheet[cell_run].v == DATE_HEADER) {
+                                           break;
+                                       }
+                                   }// error the vaule of blank cell
+                                }
+                                console.log("i is : "+i);
+                               console.log("NOT_F is :"+NOT_FOUND_Date);
+                                if (i === NOT_FOUND_Date) {
+                                   alert("Error: Can not find Date Header");
+                                    throw new Error('Error: Can not find Date Header');
+                                }*/
+
+                // if found date_row_no is row number of date header
+
+
+
+                // ต้องหาว่า next ฺB แล้ว เป็น C มี ไหม แล้วจะทำอย่างไร ให้ การ รวมค่า ทั้ง 30 วัน ง่าย ต้องใช้ data Structure อะไร
+                // เปลี่ยนใจแระ ใช้ hardCode เป็น const ไปเลย
+                // push each day site no. to array
+                // try only first one to check the vaule of cell
+                var site_no = [];
+                var total_sites = 0;
+                var daysInMonth = mm_period.daysInMonth();
+                for(j=0;j<daysInMonth;j++){
+                    site_no.push(third_worksheet[NO_OF_SITE_COL+(date_row_no+1+j)].v);
+                    total_sites = total_sites+site_no[j];
+                }
+                console.log(site_no);
+                console.log("total_no_of_site : "+total_sites);
+
+                // Find Total No. of Site
+
+                var total_site_row_no = findCell(third_worksheet,TOTAL_SITE_NO,DATE_COL,(date_row_no+daysInMonth),MAX_SEARCH);
+                console.log("row_result = "+total_site_row_no);
+                if(third_worksheet[NO_OF_SITE_COL+total_site_row_no].v === total_sites){
+                    console.log("total_sites is same");
+                }  else {
+                    console.log("Error sites in excel is "+third_worksheet[NO_OF_SITE_COL+total_site_row_no].v );
+                    console.log("sites in calculation is "+total_sites );
+                    throw new Error("Error: total_sites is NOT same");
+                }
+
+                // Calculate Average No. of Site
+                /*console.log("Round is 3.3: "+Math.round(3.3));
+                console.log("Round is 3.5: "+Math.round(3.5));
+                console.log("Round is 3.6: "+Math.round(3.6));*/
+                var avg_site_no = Math.round(total_sites/daysInMonth);
+                console.log("Average No. of Site = "+avg_site_no);
+                // check Average No. of Site
+                if(third_worksheet[AVG_SITE_NO_CELL].v === avg_site_no){
+                    console.log("average_sites is same");
+                }  else {
+                    console.log("Error sites in excel is "+third_worksheet[AVG_SITE_NO_CELL].v );
+                    console.log("sites in calculation is "+total_sites );
+                    throw new Error("Error: average_sites is NOT same");
+                }
+                var min_roaming_cost = COST_PER_ESUB*DTN_ESUB_PER_SITE*avg_site_no;  //  AxBxC
+                console.log('minimal roaming cost = '+min_roaming_cost);
+                // check Minimal Roaming Cost
+                if((first_worksheet[MIN_ROAMING_COST_CELL_FIRST].v === min_roaming_cost)&&(zero_worksheet[MIN_ROAMING_COST_CELL_ZERO].v === min_roaming_cost))
+                {
+                    console.log("minimal roaming cost is same");
+                }  else {
+                    console.log("Error minimal roaming cost in excel is "+first_worksheet[MIN_ROAMING_COST_CELL_FIRST].v );
+                    console.log("minimal roaming cost in excel(0 sheet is "+zero_worksheet[MIN_ROAMING_COST_CELL_ZERO].v );
+                    console.log("minimal roaming cost in calculation is "+min_roaming_cost );
+                    throw new Error("Error: minimal roaming cost is NOT same");
+                }
+                //  check VAT vaule
+                if(zero_worksheet[VAT_ROAMING_COST_CELL_ZERO].v === min_roaming_cost*VAT)
+                {
+                    console.log("vat of minimal roaming cost is same");
+                }  else {
+                    console.log("Error VAT minimal roaming cost in excel is "+zero_worksheet[VAT_ROAMING_COST_CELL_ZERO].v );
+                    console.log("VAT minimal roaming cost in calculation is "+min_roaming_cost*VAT );
+                    throw new Error("Error: VAT minimal roaming cost is NOT same");
+                }
+                //  check TOTAL vaule
+                if(zero_worksheet[TOTAL_ROAMING_COST_CELL_ZERO].v === (min_roaming_cost+min_roaming_cost*VAT))
+                {
+                    alert("All calcutation is CORRECT");
+                }  else {
+                    console.log("Error TOTAL minimal roaming cost in excel is "+zero_worksheet[TOTAL_ROAMING_COST_CELL_ZERO].v );
+                    console.log("TOTAL minimal roaming cost in calculation is "+(min_roaming_cost+min_roaming_cost*VAT) );
+                    throw new Error("Error: TOTAL minimal roaming cost is NOT same");
+                }
+            };
+            reader.readAsBinaryString(f);
+        }
+    }
+    xlf.addEventListener('change', handleFile, false);
+</script>
+</body>
+</html>
