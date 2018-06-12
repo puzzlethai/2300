@@ -16,7 +16,7 @@
     const LICENSE = 1.5/100 ;
     const USO = 2.5/100;
     const COST_PER_ESUB =  Math.round(91.67*(1/(1-LICENSE-USO))*100)/100;  // 2 decimal
-    const DTN_ESUB_PER_SITE = 600;
+    const B_DTN_ESUB_PER_SITE = 600;
 
     const SN_IV_SUMMARY = 0;   // sheet no. 0
     const SN_IV_SUMMARY_NAME = 'Invoice Summary';
@@ -40,6 +40,12 @@
     const VAT_ROAMING_COST_CELL_ZERO = 'D12';  // 0th sheet (invoice summary) VAT
     const TOTAL_ROAMING_COST_CELL_ZERO = 'E12'; // 0th sheet (invoice summary) TOTAL
 
+    const K_MORN_THAN_MIN_COST = 100;
+    const D_CELL = 'D26';   // 1st sheet cell of D ปริมาณทราฟฟิครวมของผู้ขอใช้บริการจากทุกสถานีฐานที่เปิดให้บริการแล้วทั่วประเทศ (GB)
+    const E_CELL = 'D27';   // 1st sheet cell of E ปริมาณการใช้งานโครงข่ายของผู้ใช้บริการเสมือนต่อ 1 ราย ณ วันลงนามในสัญญา (GB)
+    const D_divide_E_CELL = 'E28'; //  1st sheet cell of real esub
+    const MORN_THAN_MIN_COST_CELL = 'E32'; //  1st sheet ค่าตอบแทนการใช้บริการข้ามโครงข่ายฯ ในกรณีที่ปริมาณการใช้งานจริงของผู้ขอใช้บริการเกินกว่าปริมาณความจุขั้นต่ำ
+
     function findCell(sheet,text,col,rowbegin,maxloop){
         let i;
         for (i = rowbegin; i < (rowbegin+maxloop); i++) {
@@ -61,6 +67,15 @@
 
         // if found i is row number of date header
 
+    }
+    function compareValue(first,second,logtext) {
+        if(first === second){
+            console.log(logtext+' is SAME');
+        }  else {
+            console.log('Error: '+logtext+' in excel is '+first );
+            console.log(logtext+' in calculation is '+second );
+            throw new Error('Error: '+logtext+' is NOT same');
+        }
     }
     function handleFile(e) {
         var files = e.target.files;
@@ -175,7 +190,7 @@
                     console.log("sites in calculation is "+total_sites );
                     throw new Error("Error: average_sites is NOT same");
                 }
-                var min_roaming_cost = COST_PER_ESUB*DTN_ESUB_PER_SITE*avg_site_no;  //  AxBxC
+                var min_roaming_cost = COST_PER_ESUB*B_DTN_ESUB_PER_SITE*avg_site_no;  //  AxBxC
                 console.log('minimal roaming cost = '+min_roaming_cost);
                 // check Minimal Roaming Cost
                 if((first_worksheet[MIN_ROAMING_COST_CELL_FIRST].v === min_roaming_cost)&&(zero_worksheet[MIN_ROAMING_COST_CELL_ZERO].v === min_roaming_cost))
@@ -199,12 +214,19 @@
                 //  check TOTAL vaule
                 if(zero_worksheet[TOTAL_ROAMING_COST_CELL_ZERO].v === (min_roaming_cost+min_roaming_cost*VAT))
                 {
-                    alert("All calcutation is CORRECT");
+                    console.log("TOTAL minimal roaming cost is CORRECT");
                 }  else {
                     console.log("Error TOTAL minimal roaming cost in excel is "+zero_worksheet[TOTAL_ROAMING_COST_CELL_ZERO].v );
                     console.log("TOTAL minimal roaming cost in calculation is "+(min_roaming_cost+min_roaming_cost*VAT) );
                     throw new Error("Error: TOTAL minimal roaming cost is NOT same");
                 }
+                var min_esub = B_DTN_ESUB_PER_SITE*avg_site_no;  //  BxC  ปริมาณความจุขั้นต่ำ
+                var real_esub = first_worksheet[D_CELL].v/first_worksheet[E_CELL].v;   //  D/E ปริมาณการใช้งานจริง
+                console.log('real esub is '+real_esub);
+                compareValue(first_worksheet[D_divide_E_CELL].v,real_esub,'D divide E');
+                var more_than_min_cost = (real_esub-min_esub)*K_MORN_THAN_MIN_COST;
+                compareValue(first_worksheet[MORN_THAN_MIN_COST_CELL].v,more_than_min_cost,'More than MIN cost');
+                alert("All calcution is CORRECT");
             };
             reader.readAsBinaryString(f);
         }
