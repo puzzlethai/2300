@@ -44,7 +44,10 @@
     const D_CELL = 'D26';   // 1st sheet cell of D ปริมาณทราฟฟิครวมของผู้ขอใช้บริการจากทุกสถานีฐานที่เปิดให้บริการแล้วทั่วประเทศ (GB)
     const E_CELL = 'D27';   // 1st sheet cell of E ปริมาณการใช้งานโครงข่ายของผู้ใช้บริการเสมือนต่อ 1 ราย ณ วันลงนามในสัญญา (GB)
     const D_divide_E_CELL = 'E28'; //  1st sheet cell of real esub
-    const MORN_THAN_MIN_COST_CELL = 'E32'; //  1st sheet ค่าตอบแทนการใช้บริการข้ามโครงข่ายฯ ในกรณีที่ปริมาณการใช้งานจริงของผู้ขอใช้บริการเกินกว่าปริมาณความจุขั้นต่ำ
+    const MORN_THAN_MIN_COST_CELL_1 = 'E32'; //  1st sheet ค่าตอบแทนการใช้บริการข้ามโครงข่ายฯ ในกรณีที่ปริมาณการใช้งานจริงของผู้ขอใช้บริการเกินกว่าปริมาณความจุขั้นต่ำ
+    const MORN_THAN_MIN_COST_CELL_0 = 'C13'; //  0th sheet ค่าตอบแทนการใช้บริการข้ามโครงข่ายฯ ในกรณีที่ปริมาณการใช้งานจริงของผู้ขอใช้บริการเกินกว่าปริมาณความจุขั้นต่ำ
+    const VAT_MORN_THAN_MIN_COST_CELL_0 = 'D13'; //  0th sheet VAT of more_than_min
+    const TOTAL_MORN_THAN_MIN_COST_CELL_0 = 'E13'; //  0th sheet TOTAL of more_than_min
 
     function findCell(sheet,text,col,rowbegin,maxloop){
         let i;
@@ -211,7 +214,7 @@
                     console.log("VAT minimal roaming cost in calculation is "+min_roaming_cost*VAT );
                     throw new Error("Error: VAT minimal roaming cost is NOT same");
                 }
-                //  check TOTAL vaule
+                //  check TOTAL value
                 if(zero_worksheet[TOTAL_ROAMING_COST_CELL_ZERO].v === (min_roaming_cost+min_roaming_cost*VAT))
                 {
                     console.log("TOTAL minimal roaming cost is CORRECT");
@@ -220,13 +223,21 @@
                     console.log("TOTAL minimal roaming cost in calculation is "+(min_roaming_cost+min_roaming_cost*VAT) );
                     throw new Error("Error: TOTAL minimal roaming cost is NOT same");
                 }
+                // check part 2 of 1st sheet ส่วนที่ 2
                 var min_esub = B_DTN_ESUB_PER_SITE*avg_site_no;  //  BxC  ปริมาณความจุขั้นต่ำ
                 var real_esub = first_worksheet[D_CELL].v/first_worksheet[E_CELL].v;   //  D/E ปริมาณการใช้งานจริง
                 console.log('real esub is '+real_esub);
+                // check D/E
                 compareValue(first_worksheet[D_divide_E_CELL].v,real_esub,'D divide E');
                 var more_than_min_cost = (real_esub-min_esub)*K_MORN_THAN_MIN_COST;
-                compareValue(first_worksheet[MORN_THAN_MIN_COST_CELL].v,more_than_min_cost,'More than MIN cost');
-                alert("All calcution is CORRECT");
+                // check (D/E-BxC)*K
+                compareValue(first_worksheet[MORN_THAN_MIN_COST_CELL_1].v,more_than_min_cost,'More than MIN cost');
+
+                // check part2 of 0th sheet ส่วนที่2
+                compareValue(zero_worksheet[MORN_THAN_MIN_COST_CELL_0].v,more_than_min_cost,'More than MIN cost');
+                compareValue(zero_worksheet[VAT_MORN_THAN_MIN_COST_CELL_0].v,more_than_min_cost*VAT,'VAT of More cost');
+                compareValue(zero_worksheet[TOTAL_MORN_THAN_MIN_COST_CELL_0].v,more_than_min_cost+more_than_min_cost*VAT,'TOTAL of More cost');
+                alert("All calculation is CORRECT");
             };
             reader.readAsBinaryString(f);
         }
