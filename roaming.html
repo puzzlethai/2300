@@ -124,7 +124,7 @@
                 var third_worksheet = workbook.Sheets[third_sheet_name];
 
                 // make sure correct column
-                var mm_period = moment(third_worksheet[PERIOD_CELL].v);
+                var mm_period = moment(third_worksheet[PERIOD_CELL].v).add(1, 'days');
 
 
                 // find begining of date for 3rd Sheet

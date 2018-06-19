@@ -86,7 +86,7 @@
                 var second_worksheet = workbook.Sheets[first_sheet_name];
 
                 // make sure correct column
-                var mm_period = moment(second_worksheet[PERIOD_CELL].v);
+                var mm_period = moment(second_worksheet[PERIOD_CELL].v).add(1, 'days');
 
 
 
