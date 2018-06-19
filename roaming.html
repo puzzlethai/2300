@@ -28,12 +28,13 @@
     const SN_DAILY_NAME = 'Daily Site and E.Sub - DTN';
     const DATE_COL = 'B';
     const NO_OF_SITE_COL = 'C';
+    const NO_OF_SITExDay_COL = 'E';
     const PERIOD_CELL = DATE_COL+'3';
     const DATE_HEADER = 'Date';
     const TOTAL_SITE_NO = 'Total';
     const MAX_SEARCH = 15;
     // temporally
-    const AVG_SITE_NO_CELL = 'C41';
+    const AVG_SITE_NO_CELL = 'E41';
     const MIN_ROAMING_COST_CELL_FIRST = 'E19';  // 1st sheet (summary)   AxBxC  (8.2.1)
     const MIN_ROAMING_COST_CELL_ZERO = 'C12';   // 0th sheet (invoice summary)  No.2 Part 1  COST (8.2.1)
     const VAT = 7/100;
@@ -171,10 +172,10 @@
 
                 var total_site_row_no = findCell(third_worksheet,TOTAL_SITE_NO,DATE_COL,(date_row_no+daysInMonth),MAX_SEARCH);
                 console.log("row_result = "+total_site_row_no);
-                if(third_worksheet[NO_OF_SITE_COL+total_site_row_no].v === total_sites){
+                if(third_worksheet[NO_OF_SITExDay_COL+total_site_row_no].v === total_sites){
                     console.log("total_sites is same");
                 }  else {
-                    console.log("Error sites in excel is "+third_worksheet[NO_OF_SITE_COL+total_site_row_no].v );
+                    console.log("Error sites in excel is "+third_worksheet[NO_OF_SITExDay_COL+total_site_row_no].v );
                     console.log("sites in calculation is "+total_sites );
                     throw new Error("Error: total_sites is NOT same");
                 }
