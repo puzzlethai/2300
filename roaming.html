@@ -50,6 +50,10 @@
     const VAT_MORN_THAN_MIN_COST_CELL_0 = 'D13'; //  0th sheet VAT of more_than_min
     const TOTAL_MORN_THAN_MIN_COST_CELL_0 = 'E13'; //  0th sheet TOTAL of more_than_min
 
+    function Round2Decimal(num){
+        return Math.round(num * 100) / 100;
+    }
+
     function findCell(sheet,text,col,rowbegin,maxloop){
         let i;
         for (i = rowbegin; i < (rowbegin+maxloop); i++) {
@@ -194,7 +198,7 @@
                     console.log("sites in calculation is "+total_sites );
                     throw new Error("Error: average_sites is NOT same");
                 }
-                var min_roaming_cost = COST_PER_ESUB*B_DTN_ESUB_PER_SITE*avg_site_no;  //  AxBxC
+                var min_roaming_cost = Round2Decimal(COST_PER_ESUB*B_DTN_ESUB_PER_SITE*avg_site_no);  //  AxBxC
                 console.log('minimal roaming cost = '+min_roaming_cost);
                 // check Minimal Roaming Cost
                 if((first_worksheet[MIN_ROAMING_COST_CELL_FIRST].v === min_roaming_cost)&&(zero_worksheet[MIN_ROAMING_COST_CELL_ZERO].v === min_roaming_cost))
@@ -207,7 +211,7 @@
                     throw new Error("Error: minimal roaming cost is NOT same");
                 }
                 //  check VAT vaule
-                if(zero_worksheet[VAT_ROAMING_COST_CELL_ZERO].v === min_roaming_cost*VAT)
+                if(zero_worksheet[VAT_ROAMING_COST_CELL_ZERO].v === Round2Decimal(min_roaming_cost*VAT))
                 {
                     console.log("vat of minimal roaming cost is same");
                 }  else {
@@ -216,7 +220,7 @@
                     throw new Error("Error: VAT minimal roaming cost is NOT same");
                 }
                 //  check TOTAL value
-                if(zero_worksheet[TOTAL_ROAMING_COST_CELL_ZERO].v === (min_roaming_cost+min_roaming_cost*VAT))
+                if(zero_worksheet[TOTAL_ROAMING_COST_CELL_ZERO].v === (min_roaming_cost+Round2Decimal(min_roaming_cost*VAT)))
                 {
                     console.log("TOTAL minimal roaming cost is CORRECT");
                 }  else {
@@ -226,11 +230,13 @@
                 }
                 // check part 2 of 1st sheet ส่วนที่ 2
                 var min_esub = B_DTN_ESUB_PER_SITE*avg_site_no;  //  BxC  ปริมาณความจุขั้นต่ำ
-                var real_esub = first_worksheet[D_CELL].v/first_worksheet[E_CELL].v;   //  D/E ปริมาณการใช้งานจริง
+                var real_esub = Round2Decimal(first_worksheet[D_CELL].v/first_worksheet[E_CELL].v);   //  D/E ปริมาณการใช้งานจริง
                 console.log('real esub is '+real_esub);
                 // check D/E
                 compareValue(first_worksheet[D_divide_E_CELL].v,real_esub,'D divide E');
-                var more_than_min_cost = (real_esub-min_esub)*K_MORN_THAN_MIN_COST;
+                var more_than_min_cost = 0;
+                if (real_esub > min_esub)
+                    more_than_min_cost = Round2Decimal((real_esub-min_esub)*K_MORN_THAN_MIN_COST);
                 // check (D/E-BxC)*K
                 compareValue(first_worksheet[MORN_THAN_MIN_COST_CELL_1].v,more_than_min_cost,'More than MIN cost');
 
@@ -238,7 +244,9 @@
                 compareValue(zero_worksheet[MORN_THAN_MIN_COST_CELL_0].v,more_than_min_cost,'More than MIN cost');
                 compareValue(zero_worksheet[VAT_MORN_THAN_MIN_COST_CELL_0].v,more_than_min_cost*VAT,'VAT of More cost');
                 compareValue(zero_worksheet[TOTAL_MORN_THAN_MIN_COST_CELL_0].v,more_than_min_cost+more_than_min_cost*VAT,'TOTAL of More cost');
-                alert("All calculation is CORRECT");
+                var alertMsg = 'ปริมาณใช้งานจริง = '+real_esub.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") +
+                    '\nปริมาณความจุขั้นต่ำ = '+min_esub.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                alert(alertMsg+ "\nAll calculation is CORRECT");
             };
             reader.readAsBinaryString(f);
         }
