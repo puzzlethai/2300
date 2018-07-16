@@ -49,6 +49,13 @@
     const MORN_THAN_MIN_COST_CELL_0 = 'C13'; //  0th sheet ค่าตอบแทนการใช้บริการข้ามโครงข่ายฯ ในกรณีที่ปริมาณการใช้งานจริงของผู้ขอใช้บริการเกินกว่าปริมาณความจุขั้นต่ำ
     const VAT_MORN_THAN_MIN_COST_CELL_0 = 'D13'; //  0th sheet VAT of more_than_min
     const TOTAL_MORN_THAN_MIN_COST_CELL_0 = 'E13'; //  0th sheet TOTAL of more_than_min
+    const F_CELL = 'D39'; // 1st sheet ปริมาณทราฟฟิครวมของผู้ให้ใช้บริการจากทุกสถานีฐานที่เปิดให้บริการแล้วทั่วประเทศ (GB)
+    const G_CELL = 'D51'; // 1st sheet  จำนวนสถานีฐานที่ให้ใช้บริการจัดสร้างและหรือติดตั้งสถานีฐาน นอกเหนือจาก Appendix 4 จาก sheet 4
+    const DISCOUNT_CELL = 'E59';  // 1st sheet ส่วนลดหาก tot เกินใช้จนไปแย่ง ความจุขั้นต่ำ
+    const ONLY_80_MIN_CAPACITY_CELL = 'E74'; //  1st sheet ร้อยละ 80 ของปริมาณความจุขั้นต่ำ (GB)
+    const GBperEsub = '25'; // ปริมาณการใช้งานโครงข่ายของผู้ใช้บริการเสมือนต่อ 1 ราย ณ วันลงนามในสัญญา (GB)
+    const Z_CELL = 'E79'; // ค่าเฉลี่ย Peak Throughput ของทุกสถานีฐานที่เปิดให้บริการ ณ วันที่ 30 Jun 2018 (Mbps)
+    const Y_CELL = 'E80'; // ค่าเฉลี่ย Peak Throughput ของทุกสถานีฐานที่เปิดให้บริการ ณ วันที่ 30 Sep 2018 (Mbps)
 
     function Round2Decimal(num){
         return Math.round(num * 100) / 100;
@@ -211,7 +218,7 @@
                     throw new Error("Error: minimal roaming cost is NOT same");
                 }
                 //  check VAT vaule
-                if(zero_worksheet[VAT_ROAMING_COST_CELL_ZERO].v === Round2Decimal(min_roaming_cost*VAT))
+                if(Round2Decimal(zero_worksheet[VAT_ROAMING_COST_CELL_ZERO].v) === Round2Decimal(min_roaming_cost*VAT))
                 {
                     console.log("vat of minimal roaming cost is same");
                 }  else {
@@ -220,7 +227,7 @@
                     throw new Error("Error: VAT minimal roaming cost is NOT same");
                 }
                 //  check TOTAL value
-                if(zero_worksheet[TOTAL_ROAMING_COST_CELL_ZERO].v === (min_roaming_cost+Round2Decimal(min_roaming_cost*VAT)))
+                if(Round2Decimal(zero_worksheet[TOTAL_ROAMING_COST_CELL_ZERO].v) === (min_roaming_cost+Round2Decimal(min_roaming_cost*VAT)))
                 {
                     console.log("TOTAL minimal roaming cost is CORRECT");
                 }  else {
@@ -228,7 +235,7 @@
                     console.log("TOTAL minimal roaming cost in calculation is "+(min_roaming_cost+min_roaming_cost*VAT) );
                     throw new Error("Error: TOTAL minimal roaming cost is NOT same");
                 }
-                // check part 2 of 1st sheet ส่วนที่ 2
+                // Appendix 7 check part 2 of 1st sheet ส่วนที่ 2 เริ่มบังคับใช้ 23 มค. 62
                 var min_esub = B_DTN_ESUB_PER_SITE*avg_site_no;  //  BxC  ปริมาณความจุขั้นต่ำ
                 var real_esub = Round2Decimal(first_worksheet[D_CELL].v/first_worksheet[E_CELL].v);   //  D/E ปริมาณการใช้งานจริง
                 console.log('real esub is '+real_esub);
@@ -246,6 +253,34 @@
                 compareValue(zero_worksheet[TOTAL_MORN_THAN_MIN_COST_CELL_0].v,more_than_min_cost+more_than_min_cost*VAT,'TOTAL of More cost');
                 var alertMsg = 'ปริมาณใช้งานจริง = '+real_esub.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") +
                     '\nปริมาณความจุขั้นต่ำ = '+min_esub.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                if (real_esub<=min_esub){alertMsg = alertMsg+'\n ปริมาณใช้งานจริง น้อยกว่า ปริมาณความจุขั้นต่ำ ค่าตอบแทนส่วนที่ 2 = 0'}
+                else {alertMsg = alertMsg+'\n ปริมาณใช้งานจริง มากกว่า ปริมาณความจุขั้นต่ำ ค่าตอบแทนส่วนที่ 2 = '+more_than_min_cost.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")};
+                //END check part 2 of 1st sheet ส่วนที่ 2
+// Appendix 7 Check part 3 of 1st sheet ส่วนที่ 3 เริ่มบังคับใช้ 23 มค. 62
+                let tot_esub = Round2Decimal(first_worksheet[F_CELL].v/GBperEsub);
+                let total_esub =  (first_worksheet[G_CELL].v+avg_site_no)*1000; // = (จำนวน Site ของ tot + site ของ Dtn)
+                let left_esub = total_esub - min_esub; // = esubทั้งหมด - esubขั้นต่ำ
+                alertMsg = alertMsg+'\n eSUB ที่ tot ใช้ไป = '+ tot_esub.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                alertMsg = alertMsg+'\n eSUB ที เหลือให้ใช้ได้ = '+ left_esub.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                if (tot_esub > left_esub){
+                    let discount_price = (tot_esub-left_esub)*COST_PER_ESUB;
+                    alertMsg = alertMsg+'\n TOT ใช้เกินที่เหลือ ต้องมีส่วนลดให้ DTN = '+discount_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    compareValue(discount_price,first_worksheet[DISCOUNT_CELL],'ส่วนลดหาก tot ใช้เกิน');
+                } else {
+                    alertMsg = alertMsg+'\n TOT ใช้ไม่เกิน ความจุที่เหลือ'
+                }
+
+//  Appendix 7 END Check part 3 of 1st sheet
+// Appendix 5 Check no. 2  ว่าจำเป็นต้องปรับ  GB ต่อ eSUB หรือ ไม่
+                let D_value = Round2Decimal(first_worksheet[D_CELL].v); // ปริมาณทราฟฟิครวมของผู้ขอใช้บริการ
+                let only_80_min_cap = Round2Decimal(min_esub*GBperEsub*0.8);   // ร้อยละ 80 ของปริมาณความจุขั้นต่ำ (GB)
+                compareValue(Round2Decimal(first_worksheet[ONLY_80_MIN_CAPACITY_CELL].v),only_80_min_cap,'80 of min cap.');
+                alertMsg = alertMsg+'\n ปริมาณทราฟฟิครวมของผู้ขอใช้บริการ = '+D_value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                alertMsg = alertMsg+'\n ร้อยละ 80 ของปริมาณความจุขั้นต่ำ (GB) = '+only_80_min_cap.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                if (D_value<=only_80_min_cap){alertMsg = alertMsg+'\n ปริมาณทราฟฟิครวม น้อยกว่า 80 % ของความจุขั้นต่ำ ไม่ต้องปรับ GB ต่อ Esub'}
+                else {
+                    let newGBperEsub = Round2Decimal(GBperEsub*first_worksheet[Y_CELL].v/first_worksheet[Z_CELL].v);
+                    alertMsg = alertMsg+'\n ปริมาณทราฟฟิครวม มากกว่า 80 % ของความจุขั้นต่ำ ปรับ GB ต่อ eSUB เป็น : '+newGBperEsub};
                 alert(alertMsg+ "\nAll calculation is CORRECT");
             };
             reader.readAsBinaryString(f);
